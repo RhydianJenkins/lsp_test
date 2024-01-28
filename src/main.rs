@@ -1,6 +1,55 @@
+use serde::Serialize;
 use serde_json::Value;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
+
+#[derive(Serialize)]
+struct CodeActionResponse {
+    jsonrpc: &'static str,
+    id: usize,
+    result: ResultObject,
+}
+
+#[derive(Serialize)]
+struct ResultObject {
+    actions: Vec<Action>,
+}
+
+#[derive(Serialize)]
+struct Action {
+    title: &'static str,
+    kind: &'static str,
+    executeCommand: Command,
+}
+
+#[derive(Serialize)]
+struct Command {
+    title: &'static str,
+    command: &'static str,
+    arguments: Vec<&'static str>,
+}
+
+fn generate_code_action_response(request_id: usize) -> String {
+    let response = CodeActionResponse {
+        jsonrpc: "2.0",
+        id: request_id,
+        result: ResultObject {
+            actions: vec![Action {
+                title: "Print 'Hello, Neovim!'",
+                kind: "quickfix",
+                executeCommand: Command {
+                    title: "Print",
+                    command: "lua.execute",
+                    arguments: vec!["print('Hello, Neovim!')"],
+                },
+            }],
+        },
+    };
+
+    let json_string = serde_json::to_string(&response).unwrap();
+
+    json_string
+}
 
 #[tokio::main]
 async fn main() {
@@ -30,7 +79,7 @@ async fn main() {
                             println!("Received codeAction request");
 
                             let response = serde_json::to_string(&Value::String(
-                                "Handled codeAction".to_owned(),
+                                generate_code_action_response(1).to_owned(),
                             ))
                             .expect("Failed to serialize response");
 
