@@ -7,10 +7,14 @@ A minimal LSP server listening for codeAction events over tcp.
 To listen for tcp requests, start the server by running the following:
 
 ```sh
-cargo run -- --stdio
+# build
+cargo build --release
+
+# run
+./target/release/lsp_test
 ```
 
-## Use (Client)
+## Use (nc)
 
 With the server running, you can use `nc` to hit the server over TCP:
 
@@ -18,28 +22,24 @@ With the server running, you can use `nc` to hit the server over TCP:
 echo '{"jsonrpc": "2.0", "method": "textDocument/codeAction", "params": {}, "id": 1}' | nc 127.0.0.1 8080
 ```
 
-An example lua consumption
+## Use (Neovim)
+
+An example neovim lua consumption:
 
 ```lua
 -- init.lua
-local function start_language_server()
-    local client_id = vim.lsp.start_client({
-        cmd = { "cargo", "run", "--", "--stdio" },
-        cmd_cwd = "/path/to/lsp_test",
-    })
+local lspconfig = require("lspconfig")
+local configs = require("lspconfig.configs")
 
-    if not client_id then
-        print("Failed to start language server")
-        return
-    end
-
-    vim.lsp.buf_attach_client(0, client_id)
+if not configs.lsp_test then
+    configs.lsp_test = {
+        default_config = {
+            cmd = { "lsp_test", "--stdio" },
+            cmd_cwd = "/path/to/lsp_test/target/release",
+            filetypes = { "lua" },
+        },
+    }
 end
 
-vim.api.nvim_create_autocmd("FileType", {
-    pattern = "lua",
-    callback = function()
-        start_language_server()
-    end,
-})
+lspconfig.lsp_test.setup({})
 ```
