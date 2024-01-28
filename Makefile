@@ -1,3 +1,3 @@
 .PHONY: start
 start:
-	lua init.lua
+	cargo run
